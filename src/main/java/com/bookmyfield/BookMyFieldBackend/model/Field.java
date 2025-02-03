@@ -1,49 +1,68 @@
 package com.bookmyfield.BookMyFieldBackend.model;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
-@Getter
-@Setter
-@NoArgsConstructor
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.List;
+
 @Entity
 @Table(name = "fields")
 public class Field {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
     private String location;
+
+    @Column(nullable = false)
+    @Lob
     private String description;
-    private String timings;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String timings; // Store as JSON String
+
+    @Column(nullable = false)
     private double price;
+
+    @Column(nullable = false)
     private String category;
+
+    @Column(nullable = false)
     private String image;
-    
-    @Enumerated(EnumType.STRING)
-    private FieldStatus status = FieldStatus.PENDING;
+
+    @Column(nullable = false)
+    private String status = "Pending"; // Default status for admin approval
 
     @ManyToOne
-    @JoinColumn(name = "owner_id")
+    @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    // Constructor
-    public Field(String name, String location, String description, String timings, double price, String category, String image, User owner) {
+    // Constructors
+    public Field() {}
+
+    public Field(Long id, String name, String location, String description, List<String> timings,
+                 double price, String category, String image, String status, User owner) {
+        this.id = id;
         this.name = name;
         this.location = location;
         this.description = description;
-        this.timings = timings;
+        this.setTimings(timings); // Fix for JSON storage
         this.price = price;
         this.category = category;
         this.image = image;
-        this.status = FieldStatus.PENDING;
+        this.status = status;
         this.owner = owner;
     }
 
-    // Getters and Setters (Explicit)
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -76,12 +95,23 @@ public class Field {
         this.description = description;
     }
 
-    public String getTimings() {
-        return timings;
+    // Custom Getter and Setter for List Conversion
+    public List<String> getTimings() {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(this.timings, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return null;
+        }
     }
 
-    public void setTimings(String timings) {
-        this.timings = timings;
+    public void setTimings(List<String> timings) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            this.timings = objectMapper.writeValueAsString(timings);
+        } catch (Exception e) {
+            this.timings = null;
+        }
     }
 
     public double getPrice() {
@@ -108,11 +138,11 @@ public class Field {
         this.image = image;
     }
 
-    public FieldStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(FieldStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 

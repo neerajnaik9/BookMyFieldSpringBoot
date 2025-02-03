@@ -3,7 +3,6 @@ package com.bookmyfield.BookMyFieldBackend.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -38,10 +37,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/customer/**").hasRole("CUSTOMER") 
-                .requestMatchers("/api/field-owner/**").hasRole("FIELD_OWNER")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/auth/**").permitAll()  // Allow Authentication APIs
+                .requestMatchers("/api/customer/**").hasRole("CUSTOMER")  // Customer APIs
+                .requestMatchers("/api/field-owner/**", "/api/fields/**").hasRole("FIELD_OWNER") // Field Owner APIs
+                .requestMatchers("/api/admin/**", "/api/fields/pending").hasRole("ADMIN") // Admin APIs
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

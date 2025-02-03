@@ -1,7 +1,6 @@
 package com.bookmyfield.BookMyFieldBackend.service;
 
 import com.bookmyfield.BookMyFieldBackend.model.Field;
-import com.bookmyfield.BookMyFieldBackend.model.FieldStatus;
 import com.bookmyfield.BookMyFieldBackend.model.User;
 import com.bookmyfield.BookMyFieldBackend.repository.FieldRepository;
 import com.bookmyfield.BookMyFieldBackend.repository.UserRepository;
@@ -20,32 +19,32 @@ public class FieldService {
     @Autowired
     private UserRepository userRepository;
 
-    public Field addField(Field field, Long ownerId) {
-        User owner = userRepository.findById(ownerId).orElseThrow(() -> new RuntimeException("Owner not found"));
+    public Field addField(Field field, String ownerEmail) {
+        User owner = userRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         field.setOwner(owner);
-        field.setStatus(FieldStatus.PENDING);
+        field.setStatus("Pending"); // Default status for admin approval
         return fieldRepository.save(field);
     }
 
-    public List<Field> getFieldsByOwner(Long ownerId) {
-        User owner = userRepository.findById(ownerId).orElseThrow(() -> new RuntimeException("Owner not found"));
+    public List<Field> getFieldsByOwner(String ownerEmail) {
+        User owner = userRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
         return fieldRepository.findByOwner(owner);
     }
 
-    public Optional<Field> getFieldStatus(Long fieldId) {
-        return fieldRepository.findById(fieldId);
+    public void deleteField(Long id, String ownerEmail) {
+        Field field = fieldRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Field not found"));
+
+        if (!field.getOwner().getEmail().equals(ownerEmail)) {
+            throw new RuntimeException("Unauthorized to delete this field");
+        }
+
+        fieldRepository.delete(field);
     }
 
-    public Field updateField(Long fieldId, Field updatedField) {
-        return fieldRepository.findById(fieldId).map(field -> {
-            field.setName(updatedField.getName());
-            field.setLocation(updatedField.getLocation());
-            field.setDescription(updatedField.getDescription());
-            field.setTimings(updatedField.getTimings());
-            field.setPrice(updatedField.getPrice());
-            field.setCategory(updatedField.getCategory());
-            field.setImage(updatedField.getImage());
-            return fieldRepository.save(field);
-        }).orElseThrow(() -> new RuntimeException("Field not found"));
+    public List<Field> getPendingApprovals() {
+        return fieldRepository.findByStatus("Pending");
     }
 }
