@@ -33,11 +33,14 @@ public class UserService {
         user.setEmail(signupRequest.getEmail());
         user.setMobile(signupRequest.getMobile());
         user.setCustomerName(signupRequest.getCustomerName());
-        user.setPassword(passwordEncoder.encode(signupRequest.getPassword())); // Hash password
-        user.setRole(Role.valueOf(signupRequest.getRole().toUpperCase())); // Convert role string to Enum
+        user.setPassword(passwordEncoder.encode(signupRequest.getPassword())); 
+        user.setRole(Role.valueOf(signupRequest.getRole().toUpperCase())); 
 
         userRepository.save(user);
-        return new AuthResponse("User registered successfully!");
+
+        // ✅ Generate token for new user and return
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name()); // ✅ Fix: No "ROLE_" prefix in token
+        return new AuthResponse(token, user.getRole().name());
     }
 
     public AuthResponse loginUser(SignupRequest request) {
@@ -46,7 +49,8 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                String token = jwtUtil.generateToken(user.getEmail());
+                // ✅ Fix: No "ROLE_" prefix in token
+                String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
                 return new AuthResponse(token, user.getRole().name());
             }
         }
